@@ -1,2 +1,2 @@
 # Orange-Clipboard-Client
-This is a cross-platform clipboard data synchronization client (Window/MacOS)
+This is a cross-platform clipboard data synchronization client (Windows/MacOS)
