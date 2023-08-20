@@ -1,8 +1,9 @@
-package client
+package main
 
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"golang.design/x/clipboard"
 )
 
@@ -17,10 +18,17 @@ func ListenClipboardText() {
 	go func() {
 		for messageBytes := range textCh {
 			message := string(messageBytes)
-			fmt.Println("剪贴板文本信息:", message)
-			// TODO 发送信息websocket
+			Logger.Info("剪贴板文本信息:", zap.String("message", message))
+			secretData := Encrypt(clipboardConfig.SecretKey, messageBytes)
+			WriteMessage(NORMAL, secretData)
 		}
 	}()
+}
+
+func WriteClipboard(secretData []byte) bool {
+	data := Decrypt(clipboardConfig.SecretKey, secretData)
+	clipboard.Write(clipboard.FmtText, data)
+	return true
 }
 
 func ListenClipboardImage() {

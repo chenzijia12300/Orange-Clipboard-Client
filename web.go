@@ -1,9 +1,10 @@
-package client
+package main
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -13,10 +14,6 @@ var (
 		WriteBufferSize: 1024,
 	}
 	deviceInfoList = make([]DeviceInfo, 0)
-)
-
-const (
-	CANCEL = -1
 )
 
 type DeviceInfo struct {
@@ -42,12 +39,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	deviceInfo := DeviceInfo{}
 	err = json.NewDecoder(r.Body).Decode(&deviceInfo)
 	if err != nil {
-		fmt.Println("解析连接用户信息出错:", err)
+		Logger.Error("解析连接用户信息出错:", zap.Error(err))
 		return
 	}
 	deviceInfo.IPV4 = r.RemoteAddr
 	deviceInfo.Connection = conn
 	deviceInfoList = append(deviceInfoList, deviceInfo)
+	ReadMessage(deviceInfo, WriteClipboard)
 }
 
 func WriteMessage(messageType int, data []byte) {
@@ -56,7 +54,9 @@ func WriteMessage(messageType int, data []byte) {
 			conn := deviceInfo.Connection
 			err := conn.WriteMessage(messageType, data)
 			if err != nil {
-				fmt.Printf("传递消息失败:userId:%s\tipv4:%s\terr:%v", deviceInfo.UserId, deviceInfo.IPV4, err)
+				Logger.Info("传递信息失败",
+					zap.String("userId", deviceInfo.UserId),
+					zap.String("IPv4", deviceInfo.IPV4))
 				deviceInfoList = append(deviceInfoList[:i], deviceInfoList[i+1:]...)
 			}
 		}
@@ -71,11 +71,16 @@ func ReadMessage(deviceInfo DeviceInfo, readHandler ReadMessageHandler) {
 		for {
 			messageType, message, err := deviceInfo.Connection.ReadMessage()
 			if err != nil {
-				fmt.Printf("读取消息失败:userId:%s\tipv4:%s\terr:%v", deviceInfo.UserId, deviceInfo.IPV4, err)
+				Logger.Debug("读取消息失败",
+					zap.String("userId", deviceInfo.UserId),
+					zap.String("IPv4", deviceInfo.IPV4),
+					zap.Error(err))
 				return
 			}
 			if messageType == CANCEL {
-				fmt.Printf("断开连接 userId:%s\tipv4:%s\n", deviceInfo.UserId, deviceInfo.IPV4)
+				Logger.Info("断开连接",
+					zap.String("userId", deviceInfo.UserId),
+					zap.String("IPv4", deviceInfo.IPV4))
 				return
 			}
 			if !readHandler(message) {
