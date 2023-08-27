@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"net/http"
@@ -32,16 +30,16 @@ func InitServer() {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
+
 	if err != nil {
-		fmt.Println(err)
+		Logger.Error("建立websocket连接失败", zap.Error(err))
 		return
 	}
 	deviceInfo := DeviceInfo{}
-	err = json.NewDecoder(r.Body).Decode(&deviceInfo)
-	if err != nil {
-		Logger.Error("解析连接用户信息出错:", zap.Error(err))
-		return
-	}
+	platform := r.Header.Get("platform")
+	userId := r.Header.Get("userId")
+	deviceInfo.Platform = platform
+	deviceInfo.UserId = userId
 	deviceInfo.IPV4 = r.RemoteAddr
 	deviceInfo.Connection = conn
 	deviceInfoList = append(deviceInfoList, deviceInfo)
