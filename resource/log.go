@@ -1,4 +1,4 @@
-package main
+package resource
 
 import (
 	"fmt"
@@ -9,14 +9,19 @@ import (
 var (
 	Logger      *zap.Logger
 	SugarLogger *zap.SugaredLogger
+	DebugFlag   bool
 )
 
 func InitLog() {
-	logger, err := zap.NewProduction()
+	var err error
+	if DebugFlag {
+		Logger, err = zap.NewDevelopment()
+	} else {
+		Logger, err = zap.NewProduction()
+	}
 	if err != nil {
 		fmt.Println("初始化日志化组件失败")
-		os.Exit(1)
+		os.Exit(0)
 	}
-	Logger = logger
-	SugarLogger = logger.Sugar()
+	SugarLogger = Logger.Sugar()
 }
