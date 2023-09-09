@@ -33,13 +33,12 @@ func Execute() {
 		Use:   "server",
 		Short: "运行服务端",
 		Run: func(cmd *cobra.Command, args []string) {
-			// 在这里调用B方法或执行与服务器相关的逻辑
+			resource.Logger.Info("执行服务端初始化操作")
 			server.InitServer()
 		},
 	}
 
-	rootCmd.PersistentFlags().BoolVarP(&resource.DebugFlag, "debug", "d", true, "Enable debug mode")
-	// 将子命令添加到根命令
+	rootCmd.PersistentFlags().BoolVarP(&resource.DebugFlag, "debug", "d", true, "启动debug级别日志")
 	rootCmd.AddCommand(clientCmd)
 	rootCmd.AddCommand(serverCmd)
 	Init()

@@ -51,6 +51,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	deviceInfo.IPV4 = r.RemoteAddr
 	deviceInfo.Connection = conn
 	deviceInfoList = append(deviceInfoList, deviceInfo)
+	resource.Logger.Info("建立websocket连接", zap.String("ip", deviceInfo.IPV4), zap.String("deviceName", deviceInfo.DeviceName))
 	ReadClientMessage(deviceInfo)
 }
 
