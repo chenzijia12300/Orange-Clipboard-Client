@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 	"orangeadd.com/clipboard-client/client"
 	"orangeadd.com/clipboard-client/conf"
@@ -15,6 +16,7 @@ func Init() {
 }
 
 func Execute() {
+	ctx := context.Background()
 	var rootCmd = &cobra.Command{Use: "clipboard", Run: func(cmd *cobra.Command, args []string) {
 		server.InitServer()
 	}}
@@ -24,7 +26,7 @@ func Execute() {
 		Run: func(cmd *cobra.Command, args []string) {
 			resource.Logger.Info("执行客户端初始化操作")
 			client.InitClipboard()
-			client.ConnectServer()
+			client.ConnectServer(ctx)
 			client.InitSystemTray()
 
 		},

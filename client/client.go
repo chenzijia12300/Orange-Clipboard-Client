@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"net/http"
@@ -10,8 +11,9 @@ import (
 )
 
 var (
-	messageCh      chan messageContainer
-	WriteMessageCh chan<- messageContainer
+	messageCh        chan messageContainer
+	connectErrorFlag bool
+	WriteMessageCh   chan<- messageContainer
 )
 
 type messageContainer struct {
@@ -20,11 +22,12 @@ type messageContainer struct {
 }
 
 const (
-	pongWait   = 30 * time.Second
-	pingPeriod = pongWait * 9 / 10
+	pongWait        = 30 * time.Second
+	pingPeriod      = pongWait * 9 / 10
+	reConnectPeriod = 5 * time.Second
 )
 
-func ConnectServer() {
+func ConnectServer(ctx context.Context) {
 	messageCh = make(chan messageContainer)
 	WriteMessageCh = messageCh
 	serverUrl := conf.GlobalConfig.ServerUrl
@@ -34,17 +37,18 @@ func ConnectServer() {
 	conn, _, err := websocket.DefaultDialer.Dial(serverUrl, header)
 	if err != nil {
 		resource.Logger.Error("连接服务器失败", zap.String("serverUrl", conf.GlobalConfig.ServerUrl), zap.Error(err))
+		connectErrorFlag = true
 		return
 	}
 	go ReadServerMessage(conn, WriteClipboard)
 	go WriteServerMessage(conn, messageCh)
+	go ReConnectServer(ctx)
 }
 
 func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 	defer conn.Close()
 	conn.SetReadDeadline(time.Now().Add(pongWait))
 	conn.SetPongHandler(func(s string) error {
-		resource.Logger.Debug("服务端响应pong", zap.String("message", s))
 		conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
@@ -53,6 +57,7 @@ func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 		if err != nil && messageType == conf.CANCEL {
 			resource.Logger.Info("服务器断开连接",
 				zap.String("serverUrl", conn.RemoteAddr().String()))
+			connectErrorFlag = true
 			return
 		}
 		if err != nil {
@@ -60,6 +65,7 @@ func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 				zap.Int("type", messageType),
 				zap.String("serverUrl", conn.RemoteAddr().String()),
 				zap.Error(err))
+			connectErrorFlag = true
 			return
 		}
 		if !readHandler(message) {
@@ -77,9 +83,6 @@ func WriteServerMessage(conn *websocket.Conn, readMessageCh <-chan messageContai
 			err := conn.WriteMessage(websocket.PingMessage, []byte("ping"))
 			if err != nil {
 				resource.Logger.Error("服务器心跳连接失败")
-				time.AfterFunc(5*time.Second, func() {
-					ConnectServer()
-				})
 				return
 			}
 		case messageContainer := <-readMessageCh:
@@ -91,6 +94,23 @@ func WriteServerMessage(conn *websocket.Conn, readMessageCh <-chan messageContai
 					zap.String("serverUrl", conn.RemoteAddr().String()), zap.Error(err))
 				return
 			}
+		}
+	}
+}
+
+func ReConnectServer(ctx context.Context) {
+	ticker := time.NewTicker(reConnectPeriod)
+	for {
+		select {
+		case <-ticker.C:
+			if connectErrorFlag {
+				resource.Logger.Info("尝试重试连接服务器")
+				connectErrorFlag = false
+				ConnectServer(ctx)
+			}
+		case <-ctx.Done():
+			resource.Logger.Info("退出程序")
+			return
 		}
 	}
 }
