@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.design/x/clipboard"
-	"orangeadd.com/clipboard-client/conf"
-	"orangeadd.com/clipboard-client/resource"
+	"orangeadd.com/clipboard-client/client/conf"
+	"orangeadd.com/clipboard-client/common/resource"
 )
 
 type ReadMessageHandler func([]byte) bool

@@ -5,8 +5,8 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"net/http"
-	"orangeadd.com/clipboard-client/conf"
-	"orangeadd.com/clipboard-client/resource"
+	conf2 "orangeadd.com/clipboard-client/client/conf"
+	"orangeadd.com/clipboard-client/common/resource"
 	"time"
 )
 
@@ -27,16 +27,16 @@ const (
 	reConnectPeriod = 5 * time.Second
 )
 
-func ConnectServer(ctx context.Context) {
+func InitConnectServer(ctx context.Context) {
 	messageCh = make(chan messageContainer)
 	WriteMessageCh = messageCh
-	serverUrl := conf.GlobalConfig.ServerUrl
+	serverUrl := conf2.GlobalConfig.ServerUrl
 	header := http.Header{}
-	header.Add(conf.SystemName, conf.GlobalConfig.SystemName)
-	header.Add(conf.DeviceName, conf.GlobalConfig.DeviceName)
+	header.Add(conf2.SystemName, conf2.GlobalConfig.SystemName)
+	header.Add(conf2.DeviceName, conf2.GlobalConfig.DeviceName)
 	conn, _, err := websocket.DefaultDialer.Dial(serverUrl, header)
 	if err != nil {
-		resource.Logger.Error("连接服务器失败", zap.String("serverUrl", conf.GlobalConfig.ServerUrl), zap.Error(err))
+		resource.Logger.Error("连接服务器失败", zap.String("serverUrl", conf2.GlobalConfig.ServerUrl), zap.Error(err))
 		connectErrorFlag = true
 		return
 	}
@@ -54,7 +54,7 @@ func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 	})
 	for {
 		messageType, message, err := conn.ReadMessage()
-		if err != nil && messageType == conf.CANCEL {
+		if err != nil && messageType == conf2.CANCEL {
 			resource.Logger.Info("服务器断开连接",
 				zap.String("serverUrl", conn.RemoteAddr().String()))
 			connectErrorFlag = true
@@ -106,7 +106,7 @@ func ReConnectServer(ctx context.Context) {
 			if connectErrorFlag {
 				resource.Logger.Info("尝试重试连接服务器")
 				connectErrorFlag = false
-				ConnectServer(ctx)
+				InitConnectServer(ctx)
 			}
 		case <-ctx.Done():
 			resource.Logger.Info("退出程序")

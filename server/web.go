@@ -4,8 +4,8 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"net/http"
-	"orangeadd.com/clipboard-client/conf"
-	"orangeadd.com/clipboard-client/resource"
+	"orangeadd.com/clipboard-client/client/conf"
+	"orangeadd.com/clipboard-client/common/resource"
 )
 
 var (
@@ -33,6 +33,7 @@ type DeviceInfo struct {
 func InitServer() {
 	http.HandleFunc("/ws", handler)
 	go WriteClientMessage()
+
 	http.ListenAndServe("localhost:8080", nil)
 }
 
