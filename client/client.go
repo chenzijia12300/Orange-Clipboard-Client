@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"net/http"
-	conf2 "orangeadd.com/clipboard-client/client/conf"
+	"orangeadd.com/clipboard-client/client/conf"
 	"orangeadd.com/clipboard-client/common/resource"
 	"time"
 )
@@ -13,8 +13,12 @@ import (
 var (
 	messageCh        chan messageContainer
 	connectErrorFlag bool
-	WriteMessageCh   chan<- messageContainer
+
+	WriteMessageCh chan<- messageContainer
+	CloseCh        chan struct{}
 )
+
+type ConnectAction int
 
 type messageContainer struct {
 	Type int
@@ -30,19 +34,20 @@ const (
 func InitConnectServer(ctx context.Context) {
 	messageCh = make(chan messageContainer)
 	WriteMessageCh = messageCh
-	serverUrl := conf2.GlobalConfig.ServerUrl
+	serverUrl := conf.GlobalConfig.ServerUrl
 	header := http.Header{}
-	header.Add(conf2.SystemName, conf2.GlobalConfig.SystemName)
-	header.Add(conf2.DeviceName, conf2.GlobalConfig.DeviceName)
+	header.Add(conf.SystemName, conf.GlobalConfig.SystemName)
+	header.Add(conf.DeviceName, conf.GlobalConfig.DeviceName)
 	conn, _, err := websocket.DefaultDialer.Dial(serverUrl, header)
 	if err != nil {
-		resource.Logger.Error("连接服务器失败", zap.String("serverUrl", conf2.GlobalConfig.ServerUrl), zap.Error(err))
-		connectErrorFlag = true
+		resource.Logger.Error("连接服务器失败", zap.String("serverUrl", conf.GlobalConfig.ServerUrl), zap.Error(err))
+		SetConnectErrorFlag(true)
 		return
 	}
+	go ReConnectServer(ctx)
 	go ReadServerMessage(conn, WriteClipboard)
 	go WriteServerMessage(conn, messageCh)
-	go ReConnectServer(ctx)
+	go SetConnectErrorFlag(false)
 }
 
 func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
@@ -54,10 +59,10 @@ func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 	})
 	for {
 		messageType, message, err := conn.ReadMessage()
-		if err != nil && messageType == conf2.CANCEL {
+		if err != nil && messageType == conf.CANCEL {
 			resource.Logger.Info("服务器断开连接",
 				zap.String("serverUrl", conn.RemoteAddr().String()))
-			connectErrorFlag = true
+			SetConnectErrorFlag(true)
 			return
 		}
 		if err != nil {
@@ -65,7 +70,7 @@ func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 				zap.Int("type", messageType),
 				zap.String("serverUrl", conn.RemoteAddr().String()),
 				zap.Error(err))
-			connectErrorFlag = true
+			SetConnectErrorFlag(true)
 			return
 		}
 		if !readHandler(message) {
@@ -105,12 +110,30 @@ func ReConnectServer(ctx context.Context) {
 		case <-ticker.C:
 			if connectErrorFlag {
 				resource.Logger.Info("尝试重试连接服务器")
-				connectErrorFlag = false
+				SetConnectErrorFlag(false)
 				InitConnectServer(ctx)
 			}
 		case <-ctx.Done():
 			resource.Logger.Info("退出程序")
 			return
+		}
+	}
+}
+
+func SetConnectErrorFlag(flag bool) {
+	connectErrorFlag = flag
+	SysTrayConnectStatusCh <- flag
+}
+
+func CloseServer(conn *websocket.Conn) {
+	for {
+		select {
+		case <-CloseCh:
+			err := conn.Close()
+			if err != nil {
+				resource.Logger.Error("关闭服务器连接失败", zap.Error(err))
+				return
+			}
 		}
 	}
 }
