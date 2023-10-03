@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"github.com/spf13/cobra"
 	"orangeadd.com/clipboard-client/client"
 	"orangeadd.com/clipboard-client/client/conf"
+	"orangeadd.com/clipboard-client/client/db"
 	"orangeadd.com/clipboard-client/common/resource"
 	"os"
 )
@@ -14,16 +14,17 @@ func main() {
 }
 
 func execute() {
-	ctx := context.Background()
+	//ctx := context.Background()
 	var clientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "运行客户端",
 		Run: func(cmd *cobra.Command, args []string) {
 			resource.InitLog()
 			conf.InitConf()
+			db.InitDB()
 			client.InitClipboard()
-			client.InitConnectServer(ctx)
-			client.InitSystemTray()
+			//client.InitConnectServer(ctx)
+			client.InitUI()
 		},
 	}
 

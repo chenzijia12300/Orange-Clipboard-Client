@@ -12,3 +12,7 @@ const (
 	SystemName = "systemName"
 	DeviceName = "deviceName"
 )
+
+const (
+	DateTime = "01/02 15:04"
+)

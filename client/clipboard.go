@@ -6,7 +6,9 @@ import (
 	"go.uber.org/zap"
 	"golang.design/x/clipboard"
 	"orangeadd.com/clipboard-client/client/conf"
+	"orangeadd.com/clipboard-client/client/db"
 	"orangeadd.com/clipboard-client/common/resource"
+	"time"
 )
 
 type ReadMessageHandler func([]byte) bool
@@ -34,6 +36,11 @@ func ListenClipboardText() {
 				continue
 			}
 			resource.Logger.Info("剪贴板文本信息:", zap.String("message", message))
+			db.Insert(db.ClipboardModel{
+				Msg:        message,
+				MsgType:    db.MsgTextType,
+				CreateTime: time.Now().Unix(),
+			})
 			//secretData := Encrypt(clipboardConfig.SecretKey, messageBytes)
 			secretData := messageBytes
 			messageCh <- messageContainer{

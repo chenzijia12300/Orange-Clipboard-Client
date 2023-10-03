@@ -38,16 +38,17 @@ func InitConnectServer(ctx context.Context) {
 	header := http.Header{}
 	header.Add(conf.SystemName, conf.GlobalConfig.SystemName)
 	header.Add(conf.DeviceName, conf.GlobalConfig.DeviceName)
+	go ReConnectServer(ctx)
 	conn, _, err := websocket.DefaultDialer.Dial(serverUrl, header)
 	if err != nil {
 		resource.Logger.Error("连接服务器失败", zap.String("serverUrl", conf.GlobalConfig.ServerUrl), zap.Error(err))
-		SetConnectErrorFlag(true)
+		go SetConnectErrorFlag(true)
 		return
 	}
-	go ReConnectServer(ctx)
 	go ReadServerMessage(conn, WriteClipboard)
 	go WriteServerMessage(conn, messageCh)
 	go SetConnectErrorFlag(false)
+	go CloseServer(conn)
 }
 
 func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
@@ -136,4 +137,8 @@ func CloseServer(conn *websocket.Conn) {
 			}
 		}
 	}
+}
+
+func StartSplashWindow() {
+
 }
