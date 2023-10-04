@@ -8,13 +8,11 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/systray"
-	"github.com/eiannone/keyboard"
+	hook "github.com/robotn/gohook"
 	"go.uber.org/zap"
-	"orangeadd.com/clipboard-client/client/conf"
 	"orangeadd.com/clipboard-client/client/db"
 	"orangeadd.com/clipboard-client/common/resource"
 	"os"
-	"time"
 )
 
 var SysTrayConnectStatusCh = make(chan bool)
@@ -99,17 +97,29 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 			return len(clipboardModels)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(widget.NewLabel("未知时间"), widget.NewLabel("未知内容"))
+			box := container.NewVBox()
+			box.Resize(fyne.NewSize(400, 100))
+			timeLabel := widget.NewLabel("03/11 09:00:00")
+			label := widget.NewLabel("")
+			label.Wrapping = fyne.TextWrapBreak
+			minSize := label.MinSize()
+			minSize.Height = 10
+			minSize.AddWidthHeight(minSize.Width, 10)
+			box.Add(container.NewVBox(timeLabel))
+			box.Add(label)
+			return box
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			model := clipboardModels[id]
 			container := item.(*fyne.Container)
-			timeLabel := container.Objects[0].(*widget.Label)
-			msgLabel := container.Objects[1].(*widget.Label)
-			timeLabel.SetText(time.Unix(model.CreateTime, 0).Format(conf.DateTime))
-			msgLabel.SetText(model.Msg)
+			//timeLabel := container.Objects[0].(*widget.Label)
+			minLayout := container.Objects[1].(*MaxHeightLayout)
+			fmt.Println(minLayout.Visible(), minLayout.Hidden)
+			//timeLabel.SetText(time.Unix(model.CreateTime, 0).Format(conf.DateTime))
+			minLayout.Objects[0].(*widget.Label).SetText(model.Msg)
 		},
 	)
+	list.ScrollToBottom()
 	list.OnSelected = func(id widget.ListItemID) {
 		model := clipboardModels[id]
 		window.Hide()
@@ -118,31 +128,33 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 	list.OnUnselected = func(id widget.ListItemID) {
 		icon.SetResource(nil)
 	}
-	list.SetItemHeight(5, 50)
-	list.SetItemHeight(6, 50)
-
 	return list
 }
 
 func AddShortcuts(window fyne.Window) {
 	go func() {
-		err := keyboard.Open()
-		if err != nil {
-			resource.Logger.Error("初始化全局键盘监听失败", zap.Error(err))
-		}
-		defer keyboard.Close()
-		for {
-
-			_, key, err := keyboard.GetKey()
-			if err != nil {
-				resource.Logger.Error("GetKey() failure", zap.Error(err))
-			}
-			if key == keyboard.KeyCtrlQ {
-				resource.Logger.Debug("唤醒剪贴板")
-				window.Show()
-				window.RequestFocus()
-
-			}
-		}
+		hook.Register(hook.KeyDown, []string{"`", "ctrl"}, func(e hook.Event) {
+			resource.Logger.Debug("唤醒剪贴板")
+			window.Show()
+			window.SetMaster()
+			window.RequestFocus()
+		})
+		s := hook.Start()
+		<-hook.Process(s)
 	}()
+}
+
+type MaxHeightLayout struct {
+	*fyne.Container
+	MaxHeight float32
+}
+
+func (l MaxHeightLayout) MinSize() fyne.Size {
+	minSize := l.Container.MinSize()
+	//if minSize.Height > l.MaxHeight {
+	//	minSize.Height = l.MaxHeight
+	//}
+	//minSize.Width = 400
+	//fmt.Println(minSize)
+	return minSize
 }

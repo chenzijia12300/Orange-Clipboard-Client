@@ -14,11 +14,7 @@ var (
 
 func InitLog() {
 	var err error
-	if DebugFlag {
-		Logger, err = zap.NewDevelopment()
-	} else {
-		Logger, err = zap.NewProduction()
-	}
+	Logger, err = zap.NewDevelopment()
 	if err != nil {
 		fmt.Println("初始化日志化组件失败")
 		os.Exit(0)
