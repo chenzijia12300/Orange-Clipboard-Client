@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/spf13/cobra"
-	"orangeadd.com/clipboard-client/common/resource"
-	"orangeadd.com/clipboard-client/server"
+	"orange-clipboard/common/resource"
+	"orange-clipboard/server"
 	"os"
 )
 

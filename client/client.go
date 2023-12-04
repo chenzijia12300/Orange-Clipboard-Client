@@ -5,8 +5,8 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"net/http"
-	"orangeadd.com/clipboard-client/client/conf"
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/client/conf"
+	"orange-clipboard/common/resource"
 	"time"
 )
 

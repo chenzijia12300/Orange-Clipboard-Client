@@ -10,9 +10,12 @@ import (
 	"fyne.io/systray"
 	hook "github.com/robotn/gohook"
 	"go.uber.org/zap"
-	"orangeadd.com/clipboard-client/client/db"
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/client/conf"
+	"orange-clipboard/client/db"
+	"orange-clipboard/common/resource"
 	"os"
+	"time"
+	"unicode/utf8"
 )
 
 var SysTrayConnectStatusCh = make(chan bool)
@@ -98,25 +101,25 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 		},
 		func() fyne.CanvasObject {
 			box := container.NewVBox()
-			box.Resize(fyne.NewSize(400, 100))
+			box.Resize(fyne.NewSize(400, 50))
 			timeLabel := widget.NewLabel("03/11 09:00:00")
 			label := widget.NewLabel("")
 			label.Wrapping = fyne.TextWrapBreak
-			minSize := label.MinSize()
-			minSize.Height = 10
-			minSize.AddWidthHeight(minSize.Width, 10)
-			box.Add(container.NewVBox(timeLabel))
+			box.Add(timeLabel)
 			box.Add(label)
 			return box
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			model := clipboardModels[id]
 			container := item.(*fyne.Container)
-			//timeLabel := container.Objects[0].(*widget.Label)
-			minLayout := container.Objects[1].(*MaxHeightLayout)
-			fmt.Println(minLayout.Visible(), minLayout.Hidden)
-			//timeLabel.SetText(time.Unix(model.CreateTime, 0).Format(conf.DateTime))
-			minLayout.Objects[0].(*widget.Label).SetText(model.Msg)
+			timeLabel := container.Objects[0].(*widget.Label)
+			contentLabel := container.Objects[1].(*widget.Label)
+			timeLabel.SetText(time.Unix(model.CreateTime, 0).Format(conf.DateTime))
+			msg := model.Msg
+			if utf8.RuneCountInString(msg) >= 100 {
+				msg = string([]rune(msg)[0:100])
+			}
+			contentLabel.SetText(msg)
 		},
 	)
 	list.ScrollToBottom()

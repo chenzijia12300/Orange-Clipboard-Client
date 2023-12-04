@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
-	"orangeadd.com/clipboard-client/common/resource"
-	"orangeadd.com/clipboard-client/common/utils"
+	"orange-clipboard/common/resource"
+	"orange-clipboard/common/utils"
 	"os"
 )
 

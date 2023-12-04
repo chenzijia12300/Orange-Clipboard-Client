@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.design/x/clipboard"
-	"orangeadd.com/clipboard-client/client/conf"
-	"orangeadd.com/clipboard-client/client/db"
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/client/conf"
+	"orange-clipboard/client/db"
+	"orange-clipboard/common/resource"
 	"time"
 )
 

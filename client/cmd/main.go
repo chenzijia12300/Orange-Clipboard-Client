@@ -1,10 +1,10 @@
 package main
 
 import (
-	"orangeadd.com/clipboard-client/client"
-	"orangeadd.com/clipboard-client/client/conf"
-	"orangeadd.com/clipboard-client/client/db"
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/client"
+	"orange-clipboard/client/conf"
+	"orange-clipboard/client/db"
+	"orange-clipboard/common/resource"
 )
 
 func main() {

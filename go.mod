@@ -1,4 +1,4 @@
-module orangeadd.com/clipboard-client
+module orange-clipboard
 
 go 1.20
 

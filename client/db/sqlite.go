@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/common/resource"
 )
 
 type ClipboardModel struct {

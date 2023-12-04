@@ -1,7 +1,7 @@
 package db
 
 import (
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/common/resource"
 	"os"
 	"testing"
 	"time"

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"go.uber.org/zap"
-	"orangeadd.com/clipboard-client/common/resource"
+	"orange-clipboard/common/resource"
 	"os"
 )
 
