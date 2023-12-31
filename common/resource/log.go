@@ -21,3 +21,7 @@ func InitLog() {
 	}
 	SugarLogger = Logger.Sugar()
 }
+
+func Debug(msg string) {
+	fmt.Println(msg)
+}

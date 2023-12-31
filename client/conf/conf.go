@@ -14,6 +14,7 @@ type ClipboardConfig struct {
 	DeviceName string
 	SystemName string
 	ServerUrl  string
+	FontUrl    string
 }
 
 var GlobalConfig ClipboardConfig
@@ -21,6 +22,7 @@ var GlobalConfig ClipboardConfig
 const (
 	ConfigFilePath   = "./conf.toml"
 	DefaultServerUrl = "ws://localhost:8090/ws"
+	DefaultFontUrl   = "./方正楷体简体.ttf"
 )
 
 func InitConf() {
@@ -59,6 +61,7 @@ func createConf() {
 	GlobalConfig.SecretKey = utils.GenerateRandomBytes()
 	GlobalConfig.DeviceName = deviceName
 	GlobalConfig.ServerUrl = DefaultServerUrl
+	GlobalConfig.FontUrl = DefaultFontUrl
 	encoder := toml.NewEncoder(confFile)
 	encoder.Encode(GlobalConfig)
 }

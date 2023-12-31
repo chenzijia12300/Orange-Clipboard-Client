@@ -46,7 +46,7 @@ func InitDB() error {
 
 func Query(limit, offset int) []ClipboardModel {
 	clipboardModels := make([]ClipboardModel, 0)
-	rows, err := DB.Query("SELECT * FROM clipboard LIMIT ?,?", limit, offset)
+	rows, err := DB.Query("SELECT * FROM clipboard ORDER BY ID DESC LIMIT ?,?  ", limit, offset)
 	if err != nil {
 		resource.Logger.Error("查询历史剪贴数据失败", zap.Error(err))
 		return clipboardModels
