@@ -141,6 +141,7 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 			UpdateHeaderItem(model, container.Objects[0])
 			UpdateContentItem(model, container.Objects[1])
 			UpdateBottomItem(model, container.Objects[2])
+			item.Refresh()
 			list.SetItemHeight(id, container.MinSize().Height)
 		},
 	)
