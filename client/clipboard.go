@@ -26,6 +26,7 @@ func InitClipboard() error {
 	return nil
 }
 
+// 监听剪贴板文本变动
 func ListenClipboardText() {
 	ctx := context.Background()
 	textCh := clipboard.Watch(ctx, clipboard.FmtText)

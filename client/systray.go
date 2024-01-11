@@ -148,8 +148,14 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 	list.OnSelected = func(id widget.ListItemID) {
 		model := clipboardModels[id]
 		WriteClipboard([]byte(model.Msg))
-		list.Unselect(id)
+		list.UnselectAll()
 		window.Hide()
+		clipboardModels = MoveItemToHeadByIndex(id, clipboardModels)
+		list.Refresh()
+		go func() {
+			model.CreateTime = time.Now().Unix()
+			db.Update(model)
+		}()
 	}
 	list.OnUnselected = func(id widget.ListItemID) {
 	}
@@ -314,4 +320,10 @@ func binarySearch(lessMaxWidth func(int, int) bool, low int, maxHigh int) int {
 
 func convertTimeTextStr(unix int64) string {
 	return time.Unix(unix, 0).Format(conf.DateTime)
+}
+
+func MoveItemToHeadByIndex(index int, items []db.ClipboardModel) []db.ClipboardModel {
+	item := items[index]
+	return append(append([]db.ClipboardModel{item}, items[0:index]...), items[index+1:]...)
+
 }

@@ -46,7 +46,7 @@ func InitDB() error {
 
 func Query(limit, offset int) []ClipboardModel {
 	clipboardModels := make([]ClipboardModel, 0)
-	rows, err := DB.Query("SELECT * FROM clipboard ORDER BY ID DESC LIMIT ?,?  ", limit, offset)
+	rows, err := DB.Query("SELECT * FROM clipboard ORDER BY create_time DESC LIMIT ?,?  ", limit, offset)
 	if err != nil {
 		resource.Logger.Error("查询历史剪贴数据失败", zap.Error(err))
 		return clipboardModels
@@ -81,4 +81,15 @@ func Insert(data ClipboardModel) int64 {
 	}
 	id, _ := result.LastInsertId()
 	return id
+}
+
+func Update(data ClipboardModel) int64 {
+	result, err := DB.Exec("UPDATE clipboard set msg = ?,create_time = ? WHERE id = ?", data.Msg, data.CreateTime, data.ID)
+	if err != nil {
+		resource.Logger.Error("Update error", zap.Error(err))
+		return -1
+	}
+
+	row, _ := result.RowsAffected()
+	return row
 }
