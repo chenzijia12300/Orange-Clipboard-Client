@@ -109,6 +109,7 @@ func InitUI() {
 		GlobalWindow.SetContent(makeListTab(GlobalWindow))
 		GlobalWindow.ShowAndRun()
 	}
+
 }
 
 func loadFont(app fyne.App) {
@@ -121,7 +122,15 @@ func loadFont(app fyne.App) {
 }
 
 func makeListTab(window fyne.Window) fyne.CanvasObject {
-	clipboardModels := db.Query(0, 20)
+	limit, offset := 0, 20
+	clipboardModels := db.Query(limit, offset)
+	AddMessageListener(func(messageContainer MessageContainer) bool {
+		limit, offset = 0, 20
+		clipboardModels = db.Query(limit, offset)
+		fmt.Println("刷新", clipboardModels)
+		list.Refresh()
+		return true
+	})
 	list = widget.NewList(
 		func() int {
 			return len(clipboardModels)
@@ -150,11 +159,11 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 		WriteClipboard([]byte(model.Msg))
 		list.UnselectAll()
 		window.Hide()
-		clipboardModels = MoveItemToHeadByIndex(id, clipboardModels)
-		list.Refresh()
 		go func() {
 			model.CreateTime = time.Now().Unix()
 			db.Update(model)
+			clipboardModels = db.Query(limit, offset)
+			list.Refresh()
 		}()
 	}
 	list.OnUnselected = func(id widget.ListItemID) {

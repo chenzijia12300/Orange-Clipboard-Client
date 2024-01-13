@@ -6,14 +6,16 @@ import (
 	"go.uber.org/zap"
 	"golang.design/x/clipboard"
 	"orange-clipboard/client/conf"
-	"orange-clipboard/client/db"
 	"orange-clipboard/common/resource"
-	"time"
 )
 
 type ReadMessageHandler func([]byte) bool
 
+type MessageListener func(MessageContainer) bool
+
 var previousMessage string
+
+var messageListenerList []MessageListener
 
 func InitClipboard() error {
 	err := clipboard.Init()
@@ -37,16 +39,14 @@ func ListenClipboardText() {
 				continue
 			}
 			resource.Logger.Info("剪贴板文本信息:", zap.String("message", message))
-			db.Insert(db.ClipboardModel{
-				Msg:        message,
-				MsgType:    db.MsgTextType,
-				CreateTime: time.Now().Unix(),
-			})
 			//secretData := Encrypt(clipboardConfig.SecretKey, messageBytes)
 			secretData := messageBytes
-			messageCh <- messageContainer{
+			container := MessageContainer{
 				Type: conf.NORMAL,
 				Data: secretData,
+			}
+			for _, fun := range messageListenerList {
+				fun(container)
 			}
 		}
 	}()
@@ -77,4 +77,12 @@ func ListenClipboardImage() {
 			// TODO 发送信息websocket
 		}
 	}()
+}
+
+/*
+	添加剪贴板文本监听器
+*/
+
+func AddMessageListener(listener MessageListener) {
+	messageListenerList = append(messageListenerList, listener)
 }

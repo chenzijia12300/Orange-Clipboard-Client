@@ -10,20 +10,20 @@ import (
 	"time"
 )
 
-var (
-	messageCh        chan messageContainer
-	connectErrorFlag bool
-
-	WriteMessageCh chan<- messageContainer
-	CloseCh        chan struct{}
-)
-
 type ConnectAction int
 
-type messageContainer struct {
+type MessageContainer struct {
 	Type int
 	Data []byte
 }
+
+var (
+	messageCh        chan MessageContainer
+	connectErrorFlag bool
+
+	WriteMessageCh chan<- MessageContainer
+	CloseCh        chan struct{}
+)
 
 const (
 	pongWait        = 30 * time.Second
@@ -32,7 +32,7 @@ const (
 )
 
 func InitConnectServer(ctx context.Context) {
-	messageCh = make(chan messageContainer)
+	messageCh = make(chan MessageContainer)
 	WriteMessageCh = messageCh
 	serverUrl := conf.GlobalConfig.ServerUrl
 	header := http.Header{}
@@ -45,8 +45,8 @@ func InitConnectServer(ctx context.Context) {
 		go SetConnectErrorFlag(true)
 		return
 	}
+	WriteServerMessage(conn)
 	go ReadServerMessage(conn, WriteClipboard)
-	go WriteServerMessage(conn, messageCh)
 	go SetConnectErrorFlag(false)
 	go CloseServer(conn)
 }
@@ -80,28 +80,19 @@ func ReadServerMessage(conn *websocket.Conn, readHandler ReadMessageHandler) {
 	}
 }
 
-func WriteServerMessage(conn *websocket.Conn, readMessageCh <-chan messageContainer) {
-	defer conn.Close()
-	ticker := time.NewTicker(pingPeriod)
-	for {
-		select {
-		case <-ticker.C:
-			err := conn.WriteMessage(websocket.PingMessage, []byte("ping"))
-			if err != nil {
-				resource.Logger.Error("服务器心跳连接失败")
-				return
-			}
-		case messageContainer := <-readMessageCh:
-			messageType := messageContainer.Type
-			data := messageContainer.Data
-			err := conn.WriteMessage(messageType, data)
-			if err != nil {
-				resource.Logger.Info("传递信息失败",
-					zap.String("serverUrl", conn.RemoteAddr().String()), zap.Error(err))
-				return
-			}
+func WriteServerMessage(conn *websocket.Conn) {
+	AddMessageListener(func(messageContainer MessageContainer) bool {
+		messageType := messageContainer.Type
+		data := messageContainer.Data
+		err := conn.WriteMessage(messageType, data)
+		if err != nil {
+			resource.Logger.Info("传递信息失败",
+				zap.String("serverUrl", conn.RemoteAddr().String()), zap.Error(err))
+			conn.Close()
+			return false
 		}
-	}
+		return true
+	})
 }
 
 func ReConnectServer(ctx context.Context) {
@@ -137,8 +128,4 @@ func CloseServer(conn *websocket.Conn) {
 			}
 		}
 	}
-}
-
-func StartSplashWindow() {
-
 }

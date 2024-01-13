@@ -5,6 +5,7 @@ import (
 	"orange-clipboard/client/conf"
 	"orange-clipboard/client/db"
 	"orange-clipboard/common/resource"
+	"time"
 )
 
 func main() {
@@ -13,5 +14,14 @@ func main() {
 	db.InitDB()
 	client.InitClipboard()
 	//client.InitConnectServer(ctx)
+	client.AddMessageListener(func(messageContainer client.MessageContainer) bool {
+		db.Insert(db.ClipboardModel{
+			Msg:        string(messageContainer.Data),
+			MsgType:    db.MsgTextType,
+			CreateTime: time.Now().Unix(),
+		})
+		return true
+	})
 	client.InitUI()
+
 }
