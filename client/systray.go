@@ -19,6 +19,7 @@ import (
 	"orange-clipboard/client/ui"
 	"orange-clipboard/common/resource"
 	"os"
+	"syscall"
 	"time"
 )
 
@@ -26,6 +27,11 @@ var (
 	GlobalWindow           fyne.Window
 	SysTrayConnectStatusCh = make(chan bool)
 	list                   *widget.List
+)
+
+var (
+	user32               = syscall.NewLazyDLL("user32.dll")
+	systemParametersInfo = user32.NewProc("SystemParametersInfoW")
 )
 
 const (
@@ -103,10 +109,17 @@ func InitUI() {
 	loadFont(a)
 	drv := fyne.CurrentApp().Driver()
 	if drv, ok := drv.(desktop.Driver); ok {
-		GlobalWindow = drv.CreateSplashWindow()
+		GlobalWindow = drv.CreateSplashWindowByPosition(0, 0)
+		screenWidth, screenHeight, x, y := GlobalWindow.GetMonitorSizeForWindow()
+		workAreaX, workAreaY, workAreaWidth, workAreaHeight := GlobalWindow.GetWorkArea()
+		windowWidth, windowHeight := 400, 400
+		fmt.Println(screenWidth, screenHeight, x, y)
+		fmt.Println(workAreaX, workAreaY, workAreaWidth, workAreaHeight)
 		AddShortcuts(GlobalWindow)
-		GlobalWindow.Resize(fyne.NewSize(400, 400))
+		GlobalWindow.SetPosition(workAreaWidth-windowWidth, workAreaHeight-windowHeight-50)
+		GlobalWindow.Resize(fyne.NewSize(float32(windowWidth), float32(windowHeight)))
 		GlobalWindow.SetContent(makeListTab(GlobalWindow))
+		GlobalWindow.SetMaster()
 		GlobalWindow.ShowAndRun()
 	}
 
@@ -127,7 +140,6 @@ func makeListTab(window fyne.Window) fyne.CanvasObject {
 	AddMessageListener(func(messageContainer MessageContainer) bool {
 		limit, offset = 0, 20
 		clipboardModels = db.Query(limit, offset)
-		fmt.Println("刷新", clipboardModels)
 		list.Refresh()
 		return true
 	})
@@ -175,7 +187,6 @@ func AddShortcuts(window fyne.Window) {
 	go func() {
 		hook.Register(hook.KeyDown, []string{"`", "ctrl"}, func(e hook.Event) {
 			resource.Debug("唤醒剪贴板")
-			window.SetMaster()
 			window.RequestFocus()
 			window.Show()
 

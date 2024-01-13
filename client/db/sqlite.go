@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"orange-clipboard/common/resource"
@@ -81,6 +82,29 @@ func Insert(data ClipboardModel) int64 {
 	}
 	id, _ := result.LastInsertId()
 	return id
+}
+
+func InsertOrUpdate(data ClipboardModel) int64 {
+	id := 0
+	rows, err := DB.Query("SELECT id FROM clipboard where msg = ? ORDER BY create_time desc limit 1", data.Msg)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	if rows.Next() {
+		err := rows.Scan(&id)
+		if err != nil {
+			return 0
+		}
+	}
+	rows.Close()
+	fmt.Println(id)
+	if id == 0 {
+		return Insert(data)
+	} else {
+		data.ID = id
+		return Update(data)
+	}
 }
 
 func Update(data ClipboardModel) int64 {
